@@ -4,9 +4,23 @@ A Linux server, such as a VPS provisioned with Laravel Forge, can host the repos
 
 For cloud machines that sleep when idle instead of a server that runs all the time, see [t3boat.md](t3boat.md). Every setting named below: [README, Configuration](../README.md#configuration).
 
-## Set it up
+## The short way: let the agent do it
 
-On the server, work as the `forge` user, never as root. Steps 1–3 and 5 need a terminal there (`ssh forge@<server>`).
+Sign in to GitHub and Claude Code, clone fleet, and start the `setup` wizard in it. As the `forge` user, never as root:
+
+```sh
+ssh forge@<server>
+sudo apt install gh && gh auth login && gh auth setup-git
+curl -fsSL https://claude.ai/install.sh | bash && claude auth login
+git clone <your fleet remote> ~/Development/fleet
+cd ~/Development/fleet && claude "/setup"
+```
+
+If the shell does not find `claude` after the install, open a new one (`exec $SHELL -l`). The wizard checks the server and asks only for what is missing. It sets your Git identity, installs Node with nvm, runs `scripts/setup.sh`, installs T3 Code and the daily collect. Commands that need `sudo`, a login or your approval it hands to you: run them in a second SSH session, or in Claude Code with `!` in front when they ask for nothing. Last, it lists what is left on the laptop (step 6).
+
+## Set it up by hand
+
+The same steps without the wizard. On the server, work as the `forge` user, never as root. Steps 1–3 and 5 need a terminal there (`ssh forge@<server>`).
 
 1. **Git and GitHub.** Set your Git name and email, then give the server access to the private repos with the GitHub CLI (`sudo apt install gh`):
 
@@ -48,8 +62,6 @@ On the server, work as the `forge` user, never as root. Steps 1–3 and 5 need a
 6. **On the laptop.** In T3 Code, sign in to the same T3 Connect account and choose the server. In **Settings → Providers**, select the server and enable Claude. Add the projects by their path on the server, such as `~/Development/my-site` (flat).
 
 T3 Connect links up to 3 machines per account. Details: [T3 Code remote access](https://github.com/pingdotgg/t3code/blob/main/docs/user/remote-access.md), [background service](https://github.com/pingdotgg/t3code/blob/main/docs/user/background-service.md).
-
-The local `setup` skill walks through steps 3 and 5 as well: start Claude Code in `~/Development/fleet` on the server and run `/setup`.
 
 ## Working on a project
 

@@ -15,7 +15,7 @@
 # Both run `node dashboard/collect/index.ts` in this folder with the node and PATH of the shell that
 # installed them (the collector calls git, gh and amp). Rerun install after switching Node versions.
 # Output goes to .cache/collect.log. A run while the dashboard collects stops at once (lock) and is fine.
-# The job writes stats/<host>/ only; committing and pushing the stats stays with you.
+# Like every collector run, it pulls the data repo and fleet, then commits and pushes this host's data.
 set -euo pipefail
 
 FLEET_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"

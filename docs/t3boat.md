@@ -57,7 +57,7 @@ t3boat clones a project to T3's add-project folder on the machine: `~/<repo name
 ### Per machine
 
 1. **Create it.** In the menu bar, create a machine, such as `dev` with the default size, and accept the new backend in T3 Code. Pick fleet as its first project; t3boat clones it to `~/fleet`.
-2. **Claude Code.** Sign it in from t3boat. It runs `claude auth login` on the machine and forwards the login's callback, so the credential is made on the machine; the laptop's login is not touched. If `claude` is missing there, install it as in the [VPS steps](vps.md#set-it-up), step 2.
+2. **Claude Code.** Sign it in from t3boat. It runs `claude auth login` on the machine and forwards the login's callback, so the credential is made on the machine; the laptop's login is not touched. If `claude` is missing there, install it as in the [VPS steps](vps.md#set-it-up-by-hand), step 2.
 3. **Git and fleet.** Open a terminal on the machine (a terminal in a T3 Code thread on it, or `boat ssh`; `boat list` shows the sandbox names), then:
 
    ```sh

@@ -62,6 +62,20 @@ checks() {
     if have "$tool"; then ok "$tool" "installed"; else opt "$tool" "not installed"; fi
   done
 
+  # --- Linux server: the parts docs/vps.md sets up beyond fleet (user, T3 Code, lingering).
+  if [ "$this_os" = linux ]; then
+    section "Server (docs/vps.md)"
+    if [ "$(id -u)" = 0 ]; then bad user "running as root; work as your normal user (forge on a Forge server)"; else ok user "$(id -un)"; fi
+    if have t3; then ok t3 "installed; t3 status shows the service and T3 Connect"; else opt t3 "not installed; curl -fsSL https://t3.codes/install.sh | sh, then t3 up --connect"; fi
+    if have loginctl; then
+      if [ "$(loginctl show-user "$(id -un)" -p Linger --value 2>/dev/null)" = yes ]; then
+        ok lingering "on; T3 Code and the daily collect run without a login"
+      else
+        opt lingering "off; T3 Code and the daily collect run only while logged in: sudo loginctl enable-linger $(id -un)"
+      fi
+    fi
+  fi
+
   # --- Settings, repos, access config: read from JSON, so in Python like scripts/setup.sh.
   if have python3; then
     python3 - "$FLEET_DIR" "$this_os" "$(have amp && echo yes || echo no)" "$(have codex && echo yes || echo no)" <<'PY'
