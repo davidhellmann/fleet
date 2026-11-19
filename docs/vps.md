@@ -55,7 +55,27 @@ The local `setup` skill walks through steps 3 and 5 as well: start Claude Code i
 
 Work in the project itself, not in fleet. In T3 Code, add each project once by its path on the server, such as `~/Development/my-site`, and start its threads there. The agent then reads the repo's own `AGENTS.md` or `CLAUDE.md`, and the global and third-party skills are there too: setup put them in `~/.claude/skills` and `~/.agents/skills`, which every project sees.
 
+The agent runs on the server, so it sees only the server's files: its skills, `~/.claude/CLAUDE.md`, logins and `.env` files, never the laptop's. The server keeps its own skills: the global ones are links into `~/Development/fleet`, which the daily collector pulls (step 5; fast-forward only), or `git pull` there by hand. Third-party skills follow `skills.json` only through `FLEET_SKILLS=yes scripts/setup.sh` and `pnpm skills:update`, both run on the server ([skills.md](skills.md)).
+
 Open fleet as a project only for work across several repos or on fleet itself (setup, skills, dashboard). The rules in fleet's `AGENTS.md`, such as Conventional Commits, reach the agent only when it starts in fleet; a rule every repo should follow belongs in each repo, in `~/.claude/CLAUDE.md` on the server or in a global skill.
+
+## Keeping the server current
+
+After a change is pushed from the laptop:
+
+| Change | On the server |
+| --- | --- |
+| a global skill edited | nothing: the daily collector pulls fleet, the links already point there |
+| a global skill added or removed | the collector pulls fleet; then run `scripts/setup.sh` (the collector's `fleet:` line says so) |
+| a skill added to `skills.json` | the collector pulls fleet; then run `FLEET_SKILLS=yes scripts/setup.sh` |
+| a repo added to `fleet.json` | the collector pulls the data repo and rewrites `REPOS.md`; then run `FLEET_CLONE=yes scripts/setup.sh` |
+| new commits of third-party skills | `pnpm skills:update`, when you want them |
+
+One line catches up on everything and leaves the rest as it is; the `git pull` only saves waiting for the collector:
+
+```sh
+cd ~/Development/fleet && git pull && FLEET_CLONE=yes FLEET_SKILLS=yes scripts/setup.sh
+```
 
 ## Setting up a project
 

@@ -2,7 +2,7 @@
  * Keeps the data repo (fleet.json `data`) in step across hosts with plain Git: before a run, pull;
  * after it, commit this host's folder and push. Every host writes only `<host>/`, so a rebase never
  * meets a conflict. Failures never stop the collector: a missed pull or push is reported, and the
- * next run pushes what is still waiting.
+ * next run pushes what is still waiting. fleet itself is only pulled, never pushed.
  */
 import { spawnSync } from 'node:child_process';
 
@@ -35,6 +35,30 @@ export function pullData(git: GitRun): string {
   if (r.ok) return 'pulled';
   git(['rebase', '--abort']);
   return `pull failed: ${firstLine(r.out)}`;
+}
+
+/**
+ * Brings fleet itself up to date, so this host's global skills (links into this checkout) follow what
+ * was pushed. Only a fast-forward on a tree without uncommitted changes: local work is never touched,
+ * a branch with commits of its own is left as it is. Names what the pull leaves to do by hand.
+ */
+export function pullFleet(git: GitRun): string {
+  const why = cannotSync(git);
+  if (why) return `not updated: ${why}`;
+  if (git(['status', '--porcelain', '--untracked-files=no']).out !== '') return 'not updated: uncommitted changes';
+  const before = git(['rev-parse', 'HEAD']).out;
+  const pull = git(['pull', '--ff-only', '-q']);
+  if (!pull.ok) return `not updated: ${firstLine(pull.out)}`;
+  const after = git(['rev-parse', 'HEAD']).out;
+  if (after === before) return 'up to date';
+  const count = Number(git(['rev-list', '--count', `${before}..${after}`]).out) || 0;
+  const files = git(['diff', '--name-only', before, after]).out.split('\n');
+  const skillDirs = (rev: string) => git(['ls-tree', '-d', '--name-only', rev, 'skills/']).out;
+  const todo = [
+    (skillDirs(before) !== skillDirs(after) || files.includes('skills.json')) && 'skills added or removed: run scripts/setup.sh',
+    (files.includes('package.json') || files.includes('pnpm-lock.yaml')) && 'dependencies changed: run pnpm install',
+  ].filter(Boolean);
+  return `pulled ${count} commit${count === 1 ? '' : 's'}${todo.length ? `; ${todo.join('; ')}` : ''}`;
 }
 
 /**

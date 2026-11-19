@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cannotSync, gitIn, pullData, pushData } from './sync.ts';
+import { cannotSync, gitIn, pullData, pullFleet, pushData } from './sync.ts';
 import { fleetPaths, parseHostConfig, repoNameOf, writeRepoList } from '../../scripts/config.ts';
 
 /** A bare remote with one commit, and a clone of it per host. */
@@ -87,6 +87,55 @@ describe('data repo sync', () => {
     expect(cannotSync(gitIn(join(clones.mac, 'sub')))).toBe('inside another repo, not a clone of its own');
     gitIn(clones.mac)(['checkout', '-q', '-b', 'local']);
     expect(cannotSync(gitIn(clones.mac))).toBe('its branch has no upstream');
+  });
+});
+
+describe('fleet pull', () => {
+  const commit = (dir: string, file: string, text: string) => {
+    const git = gitIn(dir);
+    mkdirSync(join(dir, file, '..'), { recursive: true });
+    writeFileSync(join(dir, file), text);
+    git(['add', '-A']);
+    git(['commit', '-q', '-m', `add ${file}`]);
+    git(['push', '-q']);
+  };
+
+  it('fast-forwards and names what is left to do', () => {
+    const { clones } = setup(['laptop', 'vps']);
+    const vps = gitIn(clones.vps);
+    expect(pullFleet(vps)).toBe('up to date');
+
+    commit(clones.laptop, 'skills/tdd/SKILL.md', 'v1');
+    expect(pullFleet(vps)).toBe('pulled 1 commit; skills added or removed: run scripts/setup.sh');
+    expect(readFileSync(join(clones.vps, 'skills/tdd/SKILL.md'), 'utf8')).toBe('v1');
+
+    // a change inside a skill needs no setup run: the links already point here
+    commit(clones.laptop, 'skills/tdd/SKILL.md', 'v2');
+    commit(clones.laptop, 'package.json', '{}');
+    expect(pullFleet(vps)).toBe('pulled 2 commits; dependencies changed: run pnpm install');
+  });
+
+  it('leaves local work alone', () => {
+    const { clones } = setup(['laptop', 'vps']);
+    const vps = gitIn(clones.vps);
+    commit(clones.laptop, 'skills.json', '{}');
+
+    writeFileSync(join(clones.vps, 'README.md'), 'edited\n');
+    expect(pullFleet(vps)).toBe('not updated: uncommitted changes');
+    vps(['checkout', '-q', '--', 'README.md']);
+
+    // an untracked file does not block it
+    writeFileSync(join(clones.vps, 'notes.txt'), 'mine');
+    expect(pullFleet(vps)).toBe('pulled 1 commit; skills added or removed: run scripts/setup.sh');
+
+    // a commit of its own: no fast-forward, nothing changes
+    commit(clones.laptop, 'a.txt', 'remote');
+    writeFileSync(join(clones.vps, 'b.txt'), 'local');
+    vps(['add', 'b.txt']);
+    vps(['commit', '-q', '-m', 'local']);
+    const head = vps(['rev-parse', 'HEAD']).out;
+    expect(pullFleet(vps)).toMatch(/^not updated: /);
+    expect(vps(['rev-parse', 'HEAD']).out).toBe(head);
   });
 });
 

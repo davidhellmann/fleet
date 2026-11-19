@@ -4,13 +4,13 @@
  * into .cache/snapshot.json. <data> is the private data repo (fleet.local.json `data`, next to the
  * repos), which also holds fleet.json: pulled before a run, so the repo list and the other hosts'
  * data are fresh, and this host's folder committed and pushed after it. Rewrites REPOS.md when the
- * list changed.
+ * list changed. Pulls fleet itself too (fast-forward only), so the global skills stay current.
  *
  *   node dashboard/collect/index.ts             collect and write
  *   node dashboard/collect/index.ts --dry-run   collect and report, write nothing
  *   node dashboard/collect/index.ts --no-gh     skip GitHub; the last snapshot stays
  *   node dashboard/collect/index.ts --offline   skip everything that needs the network (GitHub, sites, Amp, sync)
- *   node dashboard/collect/index.ts --no-sync   neither pull nor push the data repo
+ *   node dashboard/collect/index.ts --no-sync   neither pull nor push the data repo, nor pull fleet
  *
  * Runs on Node's type stripping (22.18+). Readers: Claude Code, Codex, Pi, gh; git is read live by
  * the pages.
@@ -32,7 +32,7 @@ import { checkSite, type SiteCheck } from './sites.ts';
 import { AMP_APP, ampDaysToRead, ampRows, ampThreadRows, mergeAmpRows, readAmpUsage, type AmpThreadRow } from './amp.ts';
 import { readSnapshot, writeSnapshot } from './snapshot.ts';
 import { acquireLock, lockHolder } from './lock.ts';
-import { cannotSync, gitIn, pullData, pushData, type GitRun } from './sync.ts';
+import { cannotSync, gitIn, pullData, pullFleet, pushData, type GitRun } from './sync.ts';
 import { readAllStats, readCommits, readPrefixed, readStats, writeCommits, writePrefixed, writeStats } from './stats.ts';
 
 const FLEET_DIR = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, '');
@@ -80,6 +80,8 @@ async function main() {
       syncNote = `${dataLabel} ${pullData(git)}`;
     }
   }
+  // fleet itself: a fast-forward, so the global skills linked from here follow what was pushed
+  say(`fleet: ${noSync ? `not updated (${offline ? '--offline' : dryRun ? '--dry-run' : '--no-sync'})` : pullFleet(gitIn(FLEET_DIR))}`);
   if (!existsSync(paths.list)) throw new Error(`no repo list at ${paths.list}: run scripts/setup.sh, or start one from fleet.example.json`);
   const repos = loadRepos(paths.list);
   if (!dryRun && writeRepoList(paths.repoList, repos) === 'written') say('REPOS.md: rewritten from fleet.json');

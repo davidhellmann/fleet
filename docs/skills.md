@@ -15,7 +15,7 @@ Global and local skills are yours and versioned in fleet. Third-party skills are
 For every project on the machine.
 
 - **Add:** create `skills/<name>/SKILL.md`, rerun `scripts/setup.sh`, commit. Other hosts get it with `git pull` and a setup run.
-- **Change:** edit the file and commit. The links point into fleet, so this host sees it at once; other hosts after `git pull`.
+- **Change:** edit the file, commit and push. The links point into fleet, so this host sees it at once. Other hosts see it after their next collector run, which pulls fleet (fast-forward only), or a `git pull` in fleet; a new or removed skill also needs `scripts/setup.sh` there, and the collector's `fleet:` line says so.
 - **Remove:** delete the folder and rerun setup; it removes the dead links.
 
 Agents that read `~/.agents/skills`: Codex, Amp, Pi, Zed, Delta. Claude Code reads `~/.claude/skills`.
