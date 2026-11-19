@@ -36,7 +36,7 @@ The laptop as set up by fleet's README. Previews on `localhost`; for a phone, th
 Delta on the laptop works in copies, not in the repo folder. Seen on 2026-11-19, matching [Delta's worktree docs](https://delta.dev/docs/concepts/worktrees#where-new-threads-start):
 
 - **Push before a new thread.** A new thread fetches the remote and starts from its default branch (`origin/main`), not from the local branch: a commit that is only local, or uncommitted work, does not reach it. Another starting branch: **Settings → General → Project Checkouts**. A thread set to **Existing Local Checkout** before its first message works in the folder itself.
-- **A running thread keeps its copy.** Later commits reach it only when the agent merges them in ("merge origin/main into this thread's worktree").
+- **A running thread keeps its copy.** Later commits, also those a Merge subthread landed, reach it only when the agent brings them in: "Fetch origin and bring this thread up to date with origin/main; local changes already in origin/main can be dropped." **Check** in the project menu tells whether the thread is behind the remote. Stay in a thread for follow-ups to its task; start a new one for independent work, and archive a thread once its work has landed.
 - **One dev server per thread.** Each server sees only its own thread's files. Servers of earlier threads keep running, and keep their ports, until stopped in **Running Terminals** (`Cmd+Option+S`) or Delta quits.
 
 ### Personal runner
