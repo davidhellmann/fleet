@@ -1,0 +1,20 @@
+.DS_Store
+
+# Host settings, written by scripts/setup.sh (fleet.conf is the old format)
+fleet.local.json
+# The repo list lives in the private data repo; a local one (without a data repo) stays out of Git,
+# like REPOS.md, which is generated from it
+fleet.json
+REPOS.md
+fleet.conf
+.claude/settings.local.json
+.codex/config.toml
+
+# Dashboard: dependencies, Astro's generated types, build output, collector cache
+node_modules/
+.astro/
+dashboard/.astro/
+dashboard/dist/
+.cache/
+# Usage data without a data repo in fleet.json (with one, it lives in that repo)
+stats/

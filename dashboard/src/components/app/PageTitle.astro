@@ -1,0 +1,22 @@
+---
+import { PERIOD_NAMES } from '../../lib/period.ts';
+import { formatRange } from '../../lib/format.ts';
+import { usageContext } from '../../lib/page-data.ts';
+
+interface Props {
+  title: string;
+  /** Show the days of the current period under the title (pages that depend on it). */
+  showPeriod?: boolean;
+}
+const { title, showPeriod = true } = Astro.props;
+// All starts at the first day with stats; the others end today (this host's calendar day)
+const { period, range } = usageContext(Astro.url);
+---
+<div class="flex flex-col gap-1 py-4">
+  <h1 class="text-2xl font-semibold tracking-tight">{title}</h1>
+  {showPeriod && (
+    <p class="font-mono text-xs text-muted-foreground">
+      {PERIOD_NAMES[period]} · {formatRange(range)}
+    </p>
+  )}
+</div>

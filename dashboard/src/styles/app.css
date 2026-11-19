@@ -1,0 +1,202 @@
+/* ==========================================================================
+   Design tokens + Tailwind v4 entry (shadcn/ui).
+   Every colour is a light-dark() pair on :root, so it follows the computed color-scheme.
+   The scheme comes from <meta name="color-scheme"> (Base.astro): "light dark" follows the
+   system, "light" or "dark" pin it (ThemeMenu). Without JS the page follows the system.
+   Components never use hex values or Tailwind palette colours. One accent: --brand.
+   ========================================================================== */
+@import 'tailwindcss' source(none);
+@source '../components';
+@source '../pages';
+@source '../layouts';
+@import 'tw-animate-css';
+
+/* `dark:` utilities (shadcn) follow the same rule as the tokens: pinned dark, or system dark when not pinned */
+@custom-variant dark {
+  &:where(:root:has(> head > meta[name='color-scheme'][content='dark']) *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:has(> head > meta[name='color-scheme'][content='light dark']) *) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  /* The base stays "light dark"; the meta tag pins it (below) */
+  color-scheme: light dark;
+  &:has(> head > meta[name='color-scheme'][content='dark']) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name='color-scheme'][content='light']) {
+    color-scheme: light;
+  }
+
+  --radius: 0.5rem;
+
+  /* Palette: cool greys in light, navy in dark, pink accent */
+
+  /* Frame (shadcn roles). sidebar = canvas behind the sidebar, background = content panel, card = fill on the panel */
+  --sidebar: light-dark(#e9ebee, #0d1424);
+  --sidebar-foreground: light-dark(#1c2130, #e7eaf1);
+  --sidebar-primary: light-dark(#1c2130, #e7eaf1);
+  --sidebar-primary-foreground: light-dark(#f7f8f9, #131b2e);
+  --sidebar-accent: light-dark(#dde0e5, #1d2740);
+  --sidebar-accent-foreground: light-dark(#1c2130, #e7eaf1);
+  --sidebar-border: light-dark(#d6dae0, #1f2940);
+  --sidebar-ring: light-dark(#5b6270, #8f98ad);
+  --background: light-dark(#f7f8f9, #131b2e);
+  --foreground: light-dark(#1c2130, #e7eaf1);
+  --card: light-dark(#eceef1, #1a2338);
+  --card-foreground: light-dark(#1c2130, #e7eaf1);
+  --popover: light-dark(#ffffff, #1a2338);
+  --popover-foreground: light-dark(#1c2130, #e7eaf1);
+  --primary: light-dark(#1c2130, #e7eaf1);
+  --primary-foreground: light-dark(#f7f8f9, #131b2e);
+  --secondary: light-dark(#eceef1, #1a2338);
+  --secondary-foreground: light-dark(#1c2130, #e7eaf1);
+  --muted: light-dark(#eceef1, #1a2338);
+  --muted-foreground: light-dark(#5b6270, #8f98ad);
+  --accent: light-dark(#e2e5e9, #232d45);
+  --accent-foreground: light-dark(#1c2130, #e7eaf1);
+  --destructive: light-dark(#c92a2a, #ff6b6b);
+  --destructive-foreground: light-dark(#f7f8f9, #131b2e);
+  --border: light-dark(#dfe2e6, #232d45);
+  --input: light-dark(#d6dae0, #2b3652);
+  --ring: light-dark(#5b6270, #8f98ad);
+
+  /* The one accent: pink. Default data colour (single series, "this period", highlights) and label chips */
+  --brand: light-dark(#f0468a, #ff5c9c);
+  --brand-foreground: light-dark(#1c2130, #131b2e);
+  --brand-surface: light-dark(#fde4ee, #3a1f37);
+  --brand-surface-foreground: light-dark(#b0245e, #ff8ab8);
+
+  /* Activity calendar: empty day + four accent steps */
+  --level-0: light-dark(#e2e5e9, #263049);
+  --level-1: light-dark(#fbd3e3, #4a2342);
+  --level-2: light-dark(#f7a3c5, #7c2d5c);
+  --level-3: light-dark(#f36fa6, #c23f7f);
+  --level-4: light-dark(#e83c82, #ff5c9c);
+
+  /* Status: better/worse, deltas, CI; warning in between */
+  --positive: light-dark(#237a34, #69db7c);
+  --warning: light-dark(#e8b400, #fcc419);
+  --negative: light-dark(#c92a2a, #ff6b6b);
+  --grid: light-dark(rgb(28 33 48 / 0.08), rgb(231 234 241 / 0.08));
+
+  /* Categories (apps, models, hosts side by side): pink first, then navy, slate, berry, rose and grey */
+  --category-1: var(--brand);
+  --category-2: light-dark(#34446e, #c3cde6);
+  --category-3: light-dark(#7d93c2, #6f86c0);
+  --category-4: light-dark(#a3346f, #c23a7c);
+  --category-5: light-dark(#f3a5c6, #ffb0d0);
+  --category-6: light-dark(#8a93a3, #7c8494);
+
+  /* shadcn chart slots, mapped onto the categories */
+  --chart-1: var(--category-1);
+  --chart-2: var(--category-2);
+  --chart-3: var(--category-3);
+  --chart-4: var(--category-4);
+  --chart-5: var(--category-5);
+
+  accent-color: var(--brand);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-surface-foreground: var(--brand-surface-foreground);
+  --color-level-0: var(--level-0);
+  --color-level-1: var(--level-1);
+  --color-level-2: var(--level-2);
+  --color-level-3: var(--level-3);
+  --color-level-4: var(--level-4);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-negative: var(--negative);
+  --color-grid: var(--grid);
+  --color-category-1: var(--category-1);
+  --color-category-2: var(--category-2);
+  --color-category-3: var(--category-3);
+  --color-category-4: var(--category-4);
+  --color-category-5: var(--category-5);
+  --color-category-6: var(--category-6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-sidebar text-foreground font-sans antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Weights 400/500/600 only */
+  b,
+  strong {
+    @apply font-semibold;
+  }
+}
+
+/* TanStack Charts: axes and grid inherit the muted ink of the container; the tooltip is a popover
+   like every other one (token fill, 1 px border, no shadow) */
+[data-slot='chart'] {
+  --ts-chart-tooltip-background: var(--popover);
+  --ts-chart-tooltip-color: var(--popover-foreground);
+  --ts-chart-tooltip-border: 1px solid var(--border);
+  --ts-chart-tooltip-border-radius: var(--radius-md);
+  --ts-chart-tooltip-shadow: none;
+  --ts-chart-tooltip-font: 12px / 1.4 var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,28 @@
+---
+import { homedir } from 'node:os';
+import type { HostConfig } from '../../lib/fleet.ts';
+import { fleetPaths } from '../../../../scripts/config.ts';
+
+interface Props {
+  host: HostConfig;
+}
+const { host } = Astro.props;
+const home = homedir();
+const tilde = (path: string) => (path.startsWith(home) ? `~${path.slice(home.length)}` : path);
+const rows: [string, string][] = [
+  ['Name', host.host],
+  ['Root', tilde(host.root)],
+  ['Layout', host.flat ? 'flat: every repo directly in the root' : 'dirs from fleet.json'],
+  ['Data', host.data ? `${tilde(fleetPaths(__FLEET_DIR__, host).data!)}: repo list and usage data` : 'none: fleet.json and stats/ stay in fleet'],
+  ['System', process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform],
+  ['Amp', host.amp ? 'reads the Amp account' : 'off'],
+];
+---
+<dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+  {rows.map(([k, v]) => (
+    <>
+      <dt class="font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground uppercase">{k}</dt>
+      <dd class="min-w-0 font-mono text-xs break-all">{v}</dd>
+    </>
+  ))}
+</dl>

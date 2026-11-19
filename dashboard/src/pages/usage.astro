@@ -1,0 +1,49 @@
+---
+import Base from '../layouts/Base.astro';
+import PageTitle from '../components/app/PageTitle.astro';
+import { KpiCard } from '../components/app/KpiCard';
+import { BreakdownCard } from '../components/app/BreakdownCard';
+import { CardLabel } from '../components/app/CardLabel';
+import { CostChart } from '../components/app/CostChart';
+import { EmptyState } from '../components/app/EmptyState';
+import { AmpThreads } from '../components/app/AmpThreads';
+import { ampData, usageContext } from '../lib/page-data.ts';
+import { breakdown, change, timeline, totals } from '../lib/usage.ts';
+import { formatChange, formatTokens, formatUsd } from '../lib/format.ts';
+import { inRange, withPeriod } from '../lib/period.ts';
+
+const ctx = usageContext(Astro.url);
+const now = totals(ctx.rows);
+const before = ctx.previous ? totals(ctx.previous) : null;
+const byRepo = timeline(ctx.rows, ctx.range, 'repo');
+const amp = ampData();
+const ampThreads = amp.threads.filter((t) => inRange(t.day, ctx.range));
+const projectHref = (name: string) => (name === 'other' ? undefined : withPeriod(`/projects/${encodeURIComponent(name)}`, ctx.period));
+const pct = (part: number) => (now.tokens > 0 ? `${Math.round((part / now.tokens) * 100)} % of tokens` : undefined);
+---
+<Base title="Usage" active="usage">
+  <PageTitle title="Usage" />
+  <div class="flex flex-col gap-4">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <KpiCard label="Cost" value={formatUsd(now.cost)} change={formatChange(change(now.cost, before?.cost))} detail={now.unpriced ? 'some models unpriced' : 'API list prices'} />
+      <KpiCard label="Output" value={formatTokens(now.output)} change={formatChange(change(now.output, before?.output))} detail={pct(now.output)} />
+      <KpiCard label="Cache read" value={formatTokens(now.cacheRead)} detail={pct(now.cacheRead)} />
+      <KpiCard label="Cache write" value={formatTokens(now.cacheWrite)} detail={pct(now.cacheWrite)} />
+    </div>
+    <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+      <CardLabel as="h2">Cost by repo</CardLabel>
+      {byRepo.points.length > 0
+        ? <CostChart client:visible timeline={byRepo} seriesLabel="Repo" />
+        : <EmptyState>No usage in this period.</EmptyState>}
+    </section>
+    <div class="grid gap-4 lg:grid-cols-2">
+      <BreakdownCard title="By app" shares={breakdown(ctx.rows, 'app')} />
+      <BreakdownCard title="By client" shares={breakdown(ctx.rows, 'client')} />
+      <BreakdownCard title="By model" shares={breakdown(ctx.rows, 'model')} />
+      <BreakdownCard title="By repo" shares={breakdown(ctx.rows, 'repo')} limit={12} hrefOf={projectHref} />
+      <BreakdownCard title="By host" shares={breakdown(ctx.rows, 'host')} />
+    </div>
+    <AmpThreads rows={ampThreads} at={amp.at} error={amp.error} />
+  </div>
+  <p class="mt-3 text-xs text-muted-foreground">Cost is the API list price at the day it was rolled up, not money paid on a subscription. Client is the program that ran the session; sdk-ts covers apps on the Agent SDK, such as Delta.</p>
+</Base>

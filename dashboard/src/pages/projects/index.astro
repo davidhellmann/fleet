@@ -1,0 +1,58 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageTitle from '../../components/app/PageTitle.astro';
+import { Card, CardContent } from '../../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { GitState } from '../../components/app/GitState';
+import { PullsCell } from '../../components/app/PullRequests';
+import { projects } from '../../lib/fleet.ts';
+import { githubData, usageContext } from '../../lib/page-data.ts';
+import { breakdown } from '../../lib/usage.ts';
+import { formatAgo, formatUsd } from '../../lib/format.ts';
+import { withPeriod } from '../../lib/period.ts';
+
+const ctx = usageContext(Astro.url);
+const github = githubData();
+const costs = new Map(breakdown(ctx.rows, 'repo').map((s) => [s.label, s.cost]));
+// Most expensive first in the period; repos without usage keep the order of fleet.json
+const list = (await projects())
+  .map((p, i) => ({ ...p, cost: costs.get(p.name) ?? 0, order: i }))
+  .sort((a, b) => b.cost - a.cost || a.order - b.order);
+---
+<Base title="Projects" active="projects">
+  <PageTitle title="Projects" />
+  <Card className="py-2">
+    <CardContent className="px-2">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Repo</TableHead>
+            <TableHead>Branch</TableHead>
+            <TableHead>Changes</TableHead>
+            <TableHead>Last commit</TableHead>
+            <TableHead>Pull requests</TableHead>
+            <TableHead className="text-right">Cost</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {list.map((p) => (
+            <TableRow>
+              <TableCell className="max-w-80 whitespace-normal">
+                <a class="font-medium hover:underline" href={withPeriod(`/projects/${encodeURIComponent(p.name)}`, ctx.period)}>{p.name}</a>
+                <span class="block text-xs text-muted-foreground">{p.description}</span>
+              </TableCell>
+              <GitState project={p} part="branch" />
+              <GitState project={p} part="changes" />
+              <TableCell className="text-xs text-muted-foreground">
+                {p.git?.lastCommit ? <span title={p.git.lastCommit.date}>{formatAgo(p.git.lastCommit.date)}</span> : '–'}
+              </TableCell>
+              <PullsCell data={github.repos[p.name]} />
+              <TableCell className="text-right font-medium">{p.cost > 0 ? formatUsd(p.cost) : '–'}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </CardContent>
+  </Card>
+  <p class="mt-3 text-xs text-muted-foreground">Git state is read live on this host; ahead and behind are as of the last fetch. Pull requests {github.at ? `as of ${formatAgo(github.at)}` : 'appear after `pnpm collect`'}. Cost in the period at API list prices, all hosts.</p>
+</Base>

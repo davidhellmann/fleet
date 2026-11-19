@@ -1,0 +1,17 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*", "../scripts/**/*", "../vitest.config.ts"],
+  "exclude": ["dist"],
+  "compilerOptions": {
+    // Node runs scripts/ and the collector directly (type stripping): only erasable syntax, explicit .ts imports
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedSideEffectImports": true,
+    "allowJs": false,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "types": ["node"],
+    "paths": { "@/*": ["./src/*"] }
+  }
+}

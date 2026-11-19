@@ -1,0 +1,86 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageTitle from '../../components/app/PageTitle.astro';
+import HostSettings from '../../components/app/HostSettings.astro';
+import { KpiCard } from '../../components/app/KpiCard';
+import { BreakdownCard } from '../../components/app/BreakdownCard';
+import { CardLabel } from '../../components/app/CardLabel';
+import { CostChart } from '../../components/app/CostChart';
+import { ActivityCalendar } from '../../components/app/ActivityCalendar';
+import { EmptyState } from '../../components/app/EmptyState';
+import { hostConfig } from '../../lib/fleet.ts';
+import { usageContext } from '../../lib/page-data.ts';
+import { activity, breakdown, change, timeline, totals, type StatsRow } from '../../lib/usage.ts';
+import { formatChange, formatInt, formatTokens, formatUsd } from '../../lib/format.ts';
+import { withPeriod } from '../../lib/period.ts';
+
+const name = Astro.params.host ?? '';
+const ctx = usageContext(Astro.url);
+const self = hostConfig();
+const isSelf = self?.host === name;
+// A host is known when it is this one or has stats
+const known = isSelf || ctx.all.some((r) => r.host === name);
+if (!known) Astro.response.status = 404;
+
+const mine = (rows: StatsRow[]) => rows.filter((r) => r.host === name);
+const rows = mine(ctx.rows);
+const now = totals(rows);
+const before = ctx.previous ? totals(mine(ctx.previous)) : null;
+const apps = breakdown(rows, 'app');
+const byApp = timeline(rows, ctx.range, 'app');
+const cells = activity(mine(ctx.all), ctx.today);
+const yearCost = cells.reduce((a, c) => a + (c?.cost ?? 0), 0);
+const yearDays = cells.filter((c) => c && c.tokens > 0).length;
+const projectHref = (repo: string) => (repo === 'other' ? undefined : withPeriod(`/projects/${encodeURIComponent(repo)}`, ctx.period));
+---
+<Base title={known ? name : 'Not found'} active="hosts">
+  {!known ? (
+    <>
+      <PageTitle title="Not found" showPeriod={false} />
+      <div class="rounded-lg bg-card p-5">
+        <EmptyState>No host “{name}” here: it has no stats and is not this host. <a class="underline" href={withPeriod('/hosts', ctx.period)}>All hosts</a></EmptyState>
+      </div>
+    </>
+  ) : (
+    <>
+      <PageTitle title={name} />
+      <div class="flex flex-col gap-4">
+        {isSelf && self && (
+          <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+            <CardLabel as="h2">This host</CardLabel>
+            <HostSettings host={self} />
+          </section>
+        )}
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard label="Cost" value={formatUsd(now.cost)} change={formatChange(change(now.cost, before?.cost))} detail={now.unpriced ? 'some models unpriced' : 'API list prices'} />
+          <KpiCard label="Tokens" value={formatTokens(now.tokens)} change={formatChange(change(now.tokens, before?.tokens))} detail={`${formatTokens(now.output)} output`} />
+          <KpiCard label="Active days" value={formatInt(now.activeDays)} detail={`of ${formatInt(ctx.range.days)}`} />
+          <KpiCard label="Apps" value={formatInt(apps.length)} detail={apps[0] ? `top: ${apps[0].label}` : undefined} />
+        </div>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <CardLabel as="h2">Cost by app</CardLabel>
+          {byApp.points.length > 0
+            ? <CostChart client:visible timeline={byApp} seriesLabel="App" />
+            : <EmptyState>No usage on this host in this period.</EmptyState>}
+        </section>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+          <BreakdownCard title="By repo" shares={breakdown(rows, 'repo')} limit={12} hrefOf={projectHref} />
+          <BreakdownCard title="By app" shares={apps} />
+          <BreakdownCard title="By client" shares={breakdown(rows, 'client')} />
+          <BreakdownCard title="By model" shares={breakdown(rows, 'model')} />
+        </div>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <CardLabel as="h2">Activity</CardLabel>
+            <p class="font-mono text-xs text-muted-foreground">Last 12 months · {formatUsd(yearCost)} on {yearDays} days</p>
+          </div>
+          <ActivityCalendar cells={cells} label={`Agent activity on ${name} over the last 12 months: ${yearDays} active days, ${formatUsd(yearCost)}.`} />
+        </section>
+      </div>
+    </>
+  )}
+</Base>

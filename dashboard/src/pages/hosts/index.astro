@@ -1,0 +1,30 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageTitle from '../../components/app/PageTitle.astro';
+import HostSettings from '../../components/app/HostSettings.astro';
+import { CardLabel } from '../../components/app/CardLabel';
+import { EmptyState } from '../../components/app/EmptyState';
+import { BreakdownCard } from '../../components/app/BreakdownCard';
+import { hostConfig } from '../../lib/fleet.ts';
+import { usageContext } from '../../lib/page-data.ts';
+import { breakdown } from '../../lib/usage.ts';
+import { withPeriod } from '../../lib/period.ts';
+
+const host = hostConfig();
+const ctx = usageContext(Astro.url);
+const known = new Set(ctx.all.map((r) => r.host));
+const hostHref = (name: string) => withPeriod(`/hosts/${encodeURIComponent(name)}`, ctx.period);
+---
+<Base title="Hosts" active="hosts">
+  <PageTitle title="Hosts" />
+  <div class="grid gap-4 lg:grid-cols-2">
+    <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <CardLabel as="h2">This host</CardLabel>
+        {host && <a class="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground" href={hostHref(host.host)}>Details</a>}
+      </div>
+      {host ? <HostSettings host={host} /> : <EmptyState>No fleet.local.json yet: run scripts/setup.sh on this host.</EmptyState>}
+    </section>
+    <BreakdownCard title={`Hosts with stats (${known.size})`} shares={breakdown(ctx.rows, 'host')} hrefOf={hostHref} />
+  </div>
+</Base>

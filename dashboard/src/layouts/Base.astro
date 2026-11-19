@@ -1,0 +1,52 @@
+---
+import '../styles/app.css';
+import { Font } from 'astro:assets';
+import { AppShell, type Crumb } from '../components/app/AppShell';
+import { navItem, type NavKey } from '../components/app/nav';
+import { parsePeriod, withPeriod } from '../lib/period.ts';
+import { hostConfig } from '../lib/fleet.ts';
+import { collectStatus } from '../../collect/run.ts';
+
+interface Props {
+  /** Page title; on detail pages also the last breadcrumb. */
+  title: string;
+  active: NavKey;
+}
+const { title, active } = Astro.props;
+
+// The period lives in the URL, so the server renders it and every link keeps it
+const period = parsePeriod(Astro.url.searchParams.get('period'));
+const section = navItem(active);
+const crumbs: Crumb[] = [{ label: section.label, href: withPeriod(section.href, period) }];
+if (title !== section.label) crumbs.push({ label: title });
+const host = hostConfig()?.host;
+// The collector's state for the sidebar; the refresh button comes back to this page
+const collect = collectStatus(__FLEET_DIR__);
+const back = Astro.url.pathname + Astro.url.search;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      // Only the stored theme override, before the first paint (src/lib/theme.ts: fleet_theme, light | dark)
+      try {
+        var t = localStorage.getItem('fleet_theme');
+        if (t === 'light' || t === 'dark') document.querySelector('meta[name="color-scheme"]').content = t;
+      } catch (e) {}
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Font cssVariable="--font-geist" preload />
+    <Font cssVariable="--font-geist-mono" />
+    <title>{title === 'Overview' ? 'fleet' : `${title} · fleet`}</title>
+  </head>
+  <body>
+    <AppShell client:load active={active} period={period} host={host} collect={collect} back={back} crumbs={crumbs} path={Astro.url.pathname}>
+      <main id="content" class="min-w-0">
+        <div class="mx-auto w-full max-w-[1440px] px-4 pt-2 pb-10 lg:px-7"><slot /></div>
+      </main>
+    </AppShell>
+  </body>
+</html>

@@ -1,0 +1,193 @@
+---
+import { homedir } from 'node:os';
+import Base from '../../layouts/Base.astro';
+import PageTitle from '../../components/app/PageTitle.astro';
+import { KpiCard } from '../../components/app/KpiCard';
+import { BreakdownCard } from '../../components/app/BreakdownCard';
+import { CardLabel } from '../../components/app/CardLabel';
+import { CostChart } from '../../components/app/CostChart';
+import { ActivityCalendar } from '../../components/app/ActivityCalendar';
+import { EmptyState } from '../../components/app/EmptyState';
+import { changesLabel, syncLabel } from '../../components/app/GitState';
+import { PullRequestTable } from '../../components/app/PullRequests';
+import { Commits } from '../../components/app/Commits';
+import { CertNote, SiteState } from '../../components/app/Sites';
+import { RepoIssuesAndAlerts } from '../../components/app/GithubCards';
+import { project } from '../../lib/fleet.ts';
+import { commitData, githubData, sitesData, usageContext } from '../../lib/page-data.ts';
+import { orderPulls, pullCosts } from '../../lib/pulls.ts';
+import { activity, breakdown, change, timeline, totals } from '../../lib/usage.ts';
+import { formatAgo, formatChange, formatInt, formatTokens, formatUsd } from '../../lib/format.ts';
+import { normalizeRemote } from '../../../collect/repo-map.ts';
+import { inRange, withPeriod } from '../../lib/period.ts';
+
+const name = Astro.params.name ?? '';
+const p = await project(name);
+const ctx = usageContext(Astro.url);
+if (!p) Astro.response.status = 404;
+
+// Usage of this repo, all hosts
+const mine = <T extends { repo: string }>(rows: T[]) => rows.filter((r) => r.repo === name);
+const rows = mine(ctx.rows);
+const now = totals(rows);
+const before = ctx.previous ? totals(mine(ctx.previous)) : null;
+const branches = breakdown(rows, 'branch');
+const cells = activity(mine(ctx.all), ctx.today);
+const yearCost = cells.reduce((a, c) => a + (c?.cost ?? 0), 0);
+const yearDays = cells.filter((c) => c && c.tokens > 0).length;
+const byModel = timeline(rows, ctx.range, 'model');
+
+// Pull requests from the last collector run; cost from all of the repo's rows, not only the period
+const github = githubData();
+const gh = github.repos[name];
+const pulls = gh ? orderPulls(gh.pulls).slice(0, 20) : [];
+const prCosts = gh ? pullCosts(mine(ctx.all), gh.pulls, ctx.today) : new Map();
+
+// Commit estimates of the period, newest first; the work no commit took is as of the last collector run
+const cd = commitData();
+const commits = mine(cd.commits).filter((c) => inRange(c.day, ctx.range)).sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+const commitCost = commits.reduce((a, c) => a + (c.cost ?? 0), 0);
+const uncommitted = mine(cd.uncommitted).sort((a, b) => b.cost - a.cost);
+const goneBranches = mine(cd.goneBranches).sort((a, b) => b.cost - a.cost);
+const githubUrl = p?.remote && normalizeRemote(p.remote).startsWith('github.com/') ? `https://${normalizeRemote(p.remote)}` : null;
+
+const siteCheck = sitesData().checks.find((c) => c.repo === name);
+const home = homedir();
+const tilde = (path: string) => (path.startsWith(home) ? `~${path.slice(home.length)}` : path);
+const remoteUrl = p?.remote ? `https://${normalizeRemote(p.remote)}` : null;
+const facts: [string, string | null, string?][] = p
+  ? [
+      ['Path', p.path ? tilde(p.path) : p.where],
+      ['Remote', remoteUrl && normalizeRemote(p.remote), remoteUrl ?? undefined],
+      ['Read first', p.readFirst ?? null],
+      ['Site', p.site ? p.site.replace(/^https?:\/\//, '') : null, p.site],
+      ['Worktrees', p.worktrees?.join(', ') ?? null],
+      ['Systems', p.os ? p.os.join(', ') : null],
+      ['Note', p.note ?? null],
+    ]
+  : [];
+---
+<Base title={p ? p.name : 'Not found'} active="projects">
+  {!p ? (
+    <>
+      <PageTitle title="Not found" showPeriod={false} />
+      <div class="rounded-lg bg-card p-5">
+        <EmptyState>No project “{name}” in fleet.json. <a class="underline" href={withPeriod('/projects', ctx.period)}>All projects</a></EmptyState>
+      </div>
+    </>
+  ) : (
+    <>
+      <PageTitle title={p.name} />
+      <p class="-mt-2 mb-4 max-w-prose text-sm text-muted-foreground">{p.description}</p>
+      <div class="flex flex-col gap-4">
+        <div class="grid gap-4 lg:grid-cols-2">
+          <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+            <CardLabel as="h2">Repo</CardLabel>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+              {facts.filter(([, v]) => v).map(([k, v, href]) => (
+                <>
+                  <dt class="font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground uppercase">{k}</dt>
+                  <dd class="min-w-0 font-mono text-xs break-all">
+                    {href ? <a class="underline underline-offset-2 hover:text-foreground" href={href}>{v}</a> : v}
+                    {k === 'Site' && siteCheck && (
+                      <span class="mt-0.5 flex flex-wrap gap-x-2 font-sans text-muted-foreground"><SiteState check={siteCheck} /><CertNote iso={siteCheck.certExpires} /></span>
+                    )}
+                  </dd>
+                </>
+              ))}
+            </dl>
+          </section>
+          <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+            <CardLabel as="h2">Git</CardLabel>
+            {p.git ? (
+              <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+                <dt class="font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground uppercase">Branch</dt>
+                <dd class="font-mono text-xs">{p.git.branch ?? 'detached'} <span class="text-muted-foreground">· {syncLabel(p.git)}{p.git.upstream && ` with ${p.git.upstream}`}</span></dd>
+                <dt class="font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground uppercase">Changes</dt>
+                <dd class="text-xs">{changesLabel(p.git)}</dd>
+                {p.git.lastCommit && (
+                  <>
+                    <dt class="font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground uppercase">Last commit</dt>
+                    <dd class="min-w-0 text-xs">
+                      <span class="block truncate">{p.git.lastCommit.subject}</span>
+                      <span class="text-muted-foreground"><span class="font-mono">{p.git.lastCommit.hash.slice(0, 7)}</span> · {formatAgo(p.git.lastCommit.date)} · {p.git.lastCommit.author}</span>
+                    </dd>
+                  </>
+                )}
+                {p.git.worktrees.length > 0 && (
+                  <>
+                    <dt class="font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground uppercase">Worktrees</dt>
+                    <dd class="min-w-0 text-xs">
+                      <ul class="flex flex-col gap-1">
+                        {p.git.worktrees.map((w) => (
+                          <li class="min-w-0"><span class="font-mono">{w.branch ?? 'detached'}</span> <span class="block truncate text-muted-foreground" title={w.path}>{tilde(w.path)}</span></li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </>
+                )}
+              </dl>
+            ) : (
+              <EmptyState>{p.presence === 'other-os' ? 'Not cloned on this system.' : p.presence === 'missing' ? 'Not cloned here: run FLEET_CLONE=yes scripts/setup.sh.' : 'No Git state on this host.'}</EmptyState>
+            )}
+          </section>
+        </div>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <CardLabel as="h2">Pull requests</CardLabel>
+            {github.at && gh && !gh.error && <p class="font-mono text-xs text-muted-foreground">{gh.slug} · as of {formatAgo(github.at)}</p>}
+          </div>
+          {!gh
+            ? <EmptyState>{p.remote && !p.remote.includes('github.com') ? 'Not on GitHub.' : 'No pull requests read yet: run pnpm collect.'}</EmptyState>
+            : gh.error
+              ? <EmptyState>Not read: {gh.error}.</EmptyState>
+              : <PullRequestTable pulls={pulls} costs={prCosts} />}
+          {pulls.length > 0 && <p class="text-xs text-muted-foreground">Cost: usage on the PR's branch up to its merge or close, work before it was opened included; a reused branch name is split at the end of the earlier PR.</p>}
+        </section>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <CardLabel as="h2">Issues and security</CardLabel>
+          <RepoIssuesAndAlerts data={gh} />
+        </section>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <CardLabel as="h2">Commits</CardLabel>
+            <p class="font-mono text-xs text-muted-foreground">{commits.length} commit{commits.length === 1 ? '' : 's'} · {formatUsd(commitCost)} · estimate</p>
+          </div>
+          <Commits commits={commits} uncommitted={uncommitted} goneBranches={goneBranches} repoUrl={githubUrl} />
+          <p class="text-xs text-muted-foreground">An estimate: each reply on a branch counts towards the next commit that landed there, so work that led nowhere lands on the next commit. The lists below the table are as of the last collector run and not limited to the period.</p>
+        </section>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard label="Cost" value={formatUsd(now.cost)} change={formatChange(change(now.cost, before?.cost))} detail={now.unpriced ? 'some models unpriced' : 'API list prices'} />
+          <KpiCard label="Tokens" value={formatTokens(now.tokens)} change={formatChange(change(now.tokens, before?.tokens))} detail={`${formatTokens(now.output)} output`} />
+          <KpiCard label="Active days" value={formatInt(now.activeDays)} detail={`of ${formatInt(ctx.range.days)}`} />
+          <KpiCard label="Branches" value={formatInt(branches.length)} detail={branches[0] ? `top: ${branches[0].label}` : undefined} />
+        </div>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <CardLabel as="h2">Cost over time</CardLabel>
+          {byModel.points.length > 0
+            ? <CostChart client:visible timeline={byModel} seriesLabel="Model" />
+            : <EmptyState>No usage in this period.</EmptyState>}
+        </section>
+
+        <div class="grid gap-4 lg:grid-cols-3">
+          <BreakdownCard title="By branch" shares={branches} limit={10} />
+          <BreakdownCard title="By client" shares={breakdown(rows, 'client')} />
+          <BreakdownCard title="By model" shares={breakdown(rows, 'model')} />
+        </div>
+
+        <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <CardLabel as="h2">Activity</CardLabel>
+            <p class="font-mono text-xs text-muted-foreground">Last 12 months · {formatUsd(yearCost)} on {yearDays} days</p>
+          </div>
+          <ActivityCalendar cells={cells} label={`Agent activity in ${p.name} over the last 12 months: ${yearDays} active days, ${formatUsd(yearCost)}.`} />
+        </section>
+      </div>
+    </>
+  )}
+</Base>

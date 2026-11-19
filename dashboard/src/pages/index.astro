@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro';
+import PageTitle from '../components/app/PageTitle.astro';
+import { KpiCard } from '../components/app/KpiCard';
+import { BreakdownCard } from '../components/app/BreakdownCard';
+import { CardLabel } from '../components/app/CardLabel';
+import { ActivityCalendar } from '../components/app/ActivityCalendar';
+import { CostChart } from '../components/app/CostChart';
+import { EmptyState } from '../components/app/EmptyState';
+import { PlanLimits } from '../components/app/PlanLimits';
+import { Sites } from '../components/app/Sites';
+import { AssignedIssuesCard, SecurityCard } from '../components/app/GithubCards';
+import { githubData, limitsData, sitesData, usageContext } from '../lib/page-data.ts';
+import { activity, breakdown, change, timeline, totals } from '../lib/usage.ts';
+import { formatChange, formatInt, formatTokens, formatUsd } from '../lib/format.ts';
+import { withPeriod } from '../lib/period.ts';
+
+const ctx = usageContext(Astro.url);
+const now = totals(ctx.rows);
+const before = ctx.previous ? totals(ctx.previous) : null;
+const repos = breakdown(ctx.rows, 'repo');
+const models = breakdown(ctx.rows, 'model');
+const cells = activity(ctx.all, ctx.today);
+const byModel = timeline(ctx.rows, ctx.range, 'model');
+const yearCost = cells.reduce((a, c) => a + (c?.cost ?? 0), 0);
+const yearDays = cells.filter((c) => c && c.tokens > 0).length;
+const limits = limitsData();
+const sites = sitesData();
+const github = githubData();
+const repoHref = (name: string) => withPeriod(`/projects/${encodeURIComponent(name)}`, ctx.period);
+const projectHref = (name: string) => (name === 'other' ? undefined : withPeriod(`/projects/${encodeURIComponent(name)}`, ctx.period));
+---
+<Base title="Overview" active="overview">
+  <PageTitle title="Overview" />
+  {ctx.all.length === 0 ? (
+    <div class="rounded-lg bg-card p-5">
+      <EmptyState>No usage yet: `pnpm collect` reads the agent session logs into the data repo.</EmptyState>
+    </div>
+  ) : (
+    <div class="flex flex-col gap-4">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard label="Cost" value={formatUsd(now.cost)} change={formatChange(change(now.cost, before?.cost))} detail={now.unpriced ? 'some models unpriced' : 'API list prices'} />
+        <KpiCard label="Tokens" value={formatTokens(now.tokens)} change={formatChange(change(now.tokens, before?.tokens))} detail={`${formatTokens(now.output)} output`} />
+        <KpiCard label="Active days" value={formatInt(now.activeDays)} detail={`of ${formatInt(ctx.range.days)}`} />
+        <KpiCard name label="Top repo" value={repos[0]?.label ?? '–'} detail={repos[0] ? `${formatUsd(repos[0].cost)} · ${Math.round(repos[0].share * 100)} %` : undefined} />
+      </div>
+      <PlanLimits claude={limits.claude} codex={limits.codex} amp={limits.amp} />
+      <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+        <CardLabel as="h2">Cost over time</CardLabel>
+        {byModel.points.length > 0
+          ? <CostChart client:visible timeline={byModel} seriesLabel="Model" />
+          : <EmptyState>No usage in this period.</EmptyState>}
+      </section>
+      <section class="flex flex-col gap-4 rounded-lg bg-card p-5">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <CardLabel as="h2">Activity</CardLabel>
+          <p class="font-mono text-xs text-muted-foreground">Last 12 months · {formatUsd(yearCost)} on {yearDays} days</p>
+        </div>
+        <ActivityCalendar cells={cells} label={`Agent activity over the last 12 months: ${yearDays} active days, ${formatUsd(yearCost)}.`} />
+      </section>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <BreakdownCard title="By repo" shares={repos} hrefOf={projectHref} />
+        <BreakdownCard title="By model" shares={models} />
+      </div>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <AssignedIssuesCard repos={github.repos} viewer={github.viewer} at={github.at} hrefOf={repoHref} />
+        <SecurityCard repos={github.repos} at={github.at} hrefOf={repoHref} />
+      </div>
+      <Sites checks={sites.checks} at={sites.at} />
+    </div>
+  )}
+</Base>

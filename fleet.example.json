@@ -1,0 +1,27 @@
+{
+  "repos": [
+    {
+      "name": "my-site",
+      "description": "personal site, Astro.",
+      "remote": "https://github.com/you/my-site",
+      "dir": "Sites",
+      "readFirst": "AGENTS.md",
+      "site": "https://example.com"
+    },
+    {
+      "name": "my-plugin",
+      "description": "a CMS plugin.",
+      "remote": "https://github.com/you/my-plugin",
+      "dir": "Plugins",
+      "readFirst": "CLAUDE.md",
+      "worktrees": ["2.x"]
+    },
+    {
+      "name": "my-app",
+      "description": "an iOS app in SwiftUI.",
+      "remote": "https://github.com/you/my-app",
+      "dir": "Apps",
+      "os": ["macos"]
+    }
+  ]
+}
