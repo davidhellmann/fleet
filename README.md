@@ -203,11 +203,16 @@ The dashboard shows how much of each plan window is used (Claude: 5 hours and th
 | `pnpm typecheck` | type-checks the dashboard and `scripts/` |
 | `pnpm test` | runs the tests |
 | `pnpm repo-list`, `pnpm repo-list:check` | the two `write-repo-list.ts` commands above |
+| `pnpm readiness` | reports per repo on this host what a fresh environment needs (`.agents/setup`, `dev` script, Node pin, `.env.example`, preview configs); reads only, `-- --json` for scripts; see [docs/environments.md](docs/environments.md#make-a-repo-ready) |
 | `pnpm skills:update` | updates every global skill installed with the `skills` CLI, the ones from `skills.json` included |
 
 ## Set up a VPS
 
 A Linux server can host the repos and the agents, with the laptop connecting through T3 Code. The steps (Git and GitHub, Claude Code, fleet, T3 Connect) are in [docs/vps.md](docs/vps.md); cloud machines that sleep when idle: [docs/t3boat.md](docs/t3boat.md).
+
+## Other environments
+
+Where else agents can run the repos (a personal runner, Delta Cloud Runners, Amp orbs), what reaches them there, how to preview the app on a phone and how to hand work back: [docs/environments.md](docs/environments.md). The global skills `preview` and `wrap-up` do the last two.
 
 ## Skills
 

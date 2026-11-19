@@ -16,6 +16,7 @@ Home repo and control desk. Start here when a task spans several repos or does n
 - fleet only clones. Setting a repo up (dependencies, database, `.env`, worktree setup) follows that repo's own docs.
 - To add or change a repo, edit `fleet.json` in the data repo, run `node scripts/write-repo-list.ts` (Node 22.18+) to regenerate `REPOS.md`, then commit and push the data repo; never edit `REPOS.md` by hand. Other hosts get the change with their next collector run. Every config file, field, environment variable and command: `README.md`, section Configuration. Keep that section in step when one of them changes.
 - In Delta or an Amp orb, add the repos to the thread or project instead of following the paths; in an orb they are checked out under `../repos/`.
+- Running a repo elsewhere (a server, Delta Cloud Runners, Amp orbs), making it ready for that, previewing it on another device, or handing work back: `docs/environments.md`. `pnpm readiness` shows what each repo lacks.
 
 ## Repos
 

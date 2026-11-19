@@ -14,6 +14,7 @@
     "test": "vitest run",
     "repo-list": "node scripts/write-repo-list.ts",
     "repo-list:check": "node scripts/write-repo-list.ts --check",
+    "readiness": "node scripts/repo-readiness.ts",
     "skills:update": "npx -y \"$(node -p \"require('./skills.json').cli\")\" update --global --yes"
   },
   "dependencies": {

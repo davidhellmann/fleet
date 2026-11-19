@@ -99,4 +99,4 @@ A third-party skill you change becomes yours: copy it into `skills/`, note where
 - Global skills: "Import the skills in `skills/` from <your fleet remote> into my personal skills." After changing one, ask Amp: "Check if any of my imported skills are out of date."
 - Third-party skills are not in `skills/`; import them from their own sources: "Import the skills `tdd`, `grilling` from https://github.com/mattpocock/skills".
 
-**Delta** web and Cloud Runners only load skills committed to the attached project; personal skills stay on the desktop.
+**Delta** web and Cloud Runners only load skills committed to the attached project (`.agents/skills/`, or `.delta/skills/`, which wins on the same name); personal skills stay on the desktop. A skill a repo needs there belongs in that repo. Which environment reads which skills: [environments.md](environments.md#skills-in-the-cloud).

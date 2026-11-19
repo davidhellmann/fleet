@@ -2,7 +2,7 @@
 
 A Linux server, such as a VPS provisioned with Laravel Forge, can host the repos and the agents. The laptop only connects to it through T3 Code; code, agent work and provider logins stay on the server. Claude Code is the agent here.
 
-For cloud machines that sleep when idle instead of a server that runs all the time, see [t3boat.md](t3boat.md). Every setting named below: [README, Configuration](../README.md#configuration).
+For cloud machines that sleep when idle instead of a server that runs all the time, see [t3boat.md](t3boat.md); for the same server as a Delta Personal Runner, and for previews from it, see [environments.md](environments.md#personal-runner). Every setting named below: [README, Configuration](../README.md#configuration).
 
 ## The short way: let the agent do it
 
