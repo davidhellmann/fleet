@@ -287,3 +287,7 @@ Each repo brings its own setup, not fleet:
 To add one: find its name with `npx skills add <source> --list`, add it to `skills.json`, rerun `scripts/setup.sh`, commit. Other hosts install it on their next setup run; `check.sh` lists it as missing until then. Taking one out of the list does not uninstall it; run `npx skills remove -g <name>` on each host.
 
 Updates are not automatic: `pnpm skills:update` moves every skill the CLI installed to the latest commit of its source, on this host. The installed commits are in `~/.agents/.skill-lock.json`, per host, not in fleet. A name in both `skills/` and `skills.json` is a mistake: setup warns and uses the one in `skills/`. To raise the CLI version, change `cli`.
+
+## License
+
+MIT, see `LICENSE`.

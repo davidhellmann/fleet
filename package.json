@@ -1,6 +1,7 @@
 {
   "name": "fleet",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "A control desk for a set of repos: machine setup, shared skills and a local dashboard",
   "engines": {
