@@ -51,9 +51,15 @@ T3 Connect links up to 3 machines per account. Details: [T3 Code remote access](
 
 The local `setup` skill walks through steps 3 and 5 as well: start Claude Code in `~/Development/fleet` on the server and run `/setup`.
 
-## Projects on the VPS
+## Working on a project
 
-Each repo brings its own setup, not fleet:
+Work in the project itself, not in fleet. In T3 Code, add each project once by its path on the server, such as `~/Development/my-site`, and start its threads there. The agent then reads the repo's own `AGENTS.md` or `CLAUDE.md`, and the global and third-party skills are there too: setup put them in `~/.claude/skills` and `~/.agents/skills`, which every project sees.
 
-- **Long-lived setup**, such as a Craft site in Forge with its database and `.env`: describe it in the repo's read-first file.
-- **Per worktree**, such as installing dependencies or copying `.env`: a T3 Code project script set to run when a worktree is created. The repo can share its scripts in `t3.json`. When T3 removes old worktrees is set in **Settings → Worktrees → Cleanup**.
+Open fleet as a project only for work across several repos or on fleet itself (setup, skills, dashboard). The rules in fleet's `AGENTS.md`, such as Conventional Commits, reach the agent only when it starts in fleet; a rule every repo should follow belongs in each repo, in `~/.claude/CLAUDE.md` on the server or in a global skill.
+
+## Setting up a project
+
+Setup clones every repo from `fleet.json` (apart from those limited by `os` to another system) and adds its worktrees. That is all: it does not install dependencies, create `.env` files or set up a database. Each repo brings that itself:
+
+- **Once per repo, by hand:** create its `.env` (it is not in Git; copy it from the laptop or write it anew), install dependencies in the main checkout if you work there, and for a Craft site set up the site and database in Forge. The repo's read-first file says what it needs.
+- **Per worktree, automatically:** a T3 Code project script set to run when a worktree is created, such as linking the main checkout's `.env` into the worktree and installing dependencies. The repo can share its scripts in a committed `t3.json`, so it reaches the server with the clone. A repo whose worktrees run without any setup needs none. When T3 removes old worktrees is set in **Settings → Worktrees → Cleanup**.
