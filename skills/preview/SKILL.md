@@ -38,7 +38,7 @@ Vite and Astro refuse unknown host names. Allow the tailnet name for this run: V
 
 ## 3. Start and check
 
-Start the server in the background and keep its process id or terminal handle. Check it answers on the host: `curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:<port>/` returns 200, or the redirect the app makes. An error or a timeout is reported as it is, with the server's last log lines.
+Start the server in the background and keep its process id or terminal handle. Take the port from the server's own output: Vite and Astro move to the next free port when one is taken, and the server of another checkout or thread may still hold the usual one. Check it answers on the host: `curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:<port>/` returns 200, or the redirect the app makes. An error or a timeout is reported as it is, with the server's last log lines.
 
 Done when the server answers and you hold the link.
 

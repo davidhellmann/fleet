@@ -33,6 +33,12 @@ Conversations and agent state do not move between providers. What moves is the b
 
 The laptop as set up by fleet's README. Previews on `localhost`; for a phone, through T3 Code or Tailscale ([Previews](#previews)).
 
+Delta on the laptop works in copies, not in the repo folder. Seen on 2026-11-19, matching [Delta's worktree docs](https://delta.dev/docs/concepts/worktrees#where-new-threads-start):
+
+- **Push before a new thread.** A new thread fetches the remote and starts from its default branch (`origin/main`), not from the local branch: a commit that is only local, or uncommitted work, does not reach it. Another starting branch: **Settings → General → Project Checkouts**. A thread set to **Existing Local Checkout** before its first message works in the folder itself.
+- **A running thread keeps its copy.** Later commits reach it only when the agent merges them in ("merge origin/main into this thread's worktree").
+- **One dev server per thread.** Each server sees only its own thread's files. Servers of earlier threads keep running, and keep their ports, until stopped in **Running Terminals** (`Cmd+Option+S`) or Delta quits.
+
 ### Personal runner
 
 A machine of your own that agents use while the laptop is closed. Three ways in, which can share one server:
@@ -80,7 +86,7 @@ One script for both Amp and Delta:
 - Steps for every new worktree go where each app runs them: `.agents/prepare` (Delta, keep it fast), a `t3.json` script with `runOnWorktreeCreate` (T3 Code).
 - `.delta/setup` replaces `.agents/setup` for Delta only; use it only when the two must differ.
 
-Delta keeps its local checkouts in `.delta/worktrees/` and `.delta/clones/` and excludes them itself (`.git/info/exclude`); nothing to ignore. The other files under `.delta/` (`setup`, `prepare`, `linked`, `skills/`) are meant to be committed.
+Delta keeps its local checkouts inside the repo folder, in `.delta/worktrees/` and `.delta/clones/`, and excludes them from Git itself (`.git/info/exclude`). Tools that search the folder on their own do not read that file: test runners, file watchers, linters and type checkers then also run over every thread's copy (Vitest counted each test three times). Exclude `**/.delta/**` in their config, in the repo, when it is used with Delta. The other files under `.delta/` (`setup`, `prepare`, `linked`, `skills/`) are meant to be committed.
 
 ### Why no run manifest
 
