@@ -3,7 +3,7 @@
 Home repo and control desk. Start here when a task spans several repos or does not belong to one yet. This repo holds the skills, the machine setup and the dashboard; the code lives in the repos. Nothing personal lives here: the repo list and the usage data are in a private data repo.
 
 - Global skills live in `skills/` and are linked into every project by `scripts/setup.sh`; third-party ones are listed in `skills.json` and installed by it. Skills only for fleet live in `.agents/skills/`.
-- To set up or check a machine, use the local `setup` skill, a wizard over `README.md`. To add a skill, follow `README.md`.
+- To set up or check a machine, use the local `setup` skill, a wizard over `README.md` and `docs/vps.md`. To add, update or remove a skill, follow `docs/skills.md`.
 - The local dashboard lives in `dashboard/` (Astro, React, shadcn, Tailwind; `pnpm dashboard`). Read `docs/dashboard.md` before working on it; its Decisions section holds the version pins, the theme and the browser policy. Run `pnpm typecheck` and `pnpm test` after changes.
 - The private data repo (`data` in `fleet.local.json`, at `<root>/<its name>`) holds `fleet.json`, the repo list, and the dashboard's usage data (`<host>/`). The collector writes and pushes the usage data; never edit it by hand. Never copy anything from the data repo into fleet: no repo names, paths, costs or numbers in fleet's files, docs or commits.
 

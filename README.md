@@ -29,9 +29,7 @@ Or let an agent started in fleet walk you through it: the local skill `setup` (`
 Two steps stay manual:
 
 1. **Codex**: mark fleet as a trusted project, or it ignores `.codex/config.toml`.
-2. **Amp orbs** cannot see local links. Import the global skills once into Amp's hosted personal skills, in any Amp thread: "Import the skills in `skills/` from <your fleet remote> into my personal skills." After changing a skill, ask Amp: "Check if any of my imported skills are out of date." The third-party skills from `skills.json` are not in `skills/`; import them from their own sources the same way ("Import the skills `tdd`, `grilling` from https://github.com/mattpocock/skills").
-
-Delta web and Cloud Runners only load skills committed to the attached project; personal skills stay on the desktop.
+2. **Amp orbs** cannot see local links. Import the skills once into Amp's hosted personal skills; see [docs/skills.md](docs/skills.md#amp-orbs-and-delta).
 
 fleet only clones. Setting a repo up (dependencies, database, `.env`, what a new worktree needs) is the repo's job and lives in its read-first file, not here.
 
@@ -45,7 +43,7 @@ Everything fleet reads or writes, in one place.
 | `fleet.example.json` | yes | | a starting point for your `fleet.json` |
 | `fleet.local.json` | no | `scripts/setup.sh`, then you | settings of this host |
 | `REPOS.md` | no | `scripts/write-repo-list.ts`, setup, every collector run | readable repo list for agents, generated from `fleet.json`; Claude Code loads it through `CLAUDE.md` |
-| `skills.json` | yes | you | the third-party skills every host installs, with the pinned `skills` CLI; see [skills.json](#skillsjson) |
+| `skills.json` | yes | you | the third-party skills every host installs, with the pinned `skills` CLI; see [docs/skills.md](docs/skills.md#skillsjson) |
 | `~/.agents/.skill-lock.json` | no, outside fleet | the `skills` CLI | per host: source and installed commit of each skill the CLI installed |
 | `.claude/settings.local.json` | no | `scripts/setup.sh` | lets Claude Code work in `root` when started in fleet |
 | `.codex/config.toml` | no | `scripts/setup.sh` | lets Codex write in `root` when started in fleet |
@@ -208,85 +206,15 @@ The dashboard shows how much of each plan window is used (Claude: 5 hours and th
 
 ## Set up a VPS
 
-A Linux server, such as a VPS provisioned with Laravel Forge, can host the repos and the agents. The laptop only connects to it through T3 Code; code, agent work and provider logins stay on the server. Claude Code is the agent here.
-
-For cloud machines that sleep when idle instead of a server that runs all the time, see [docs/t3boat.md](docs/t3boat.md).
-
-On the server, work as the `forge` user, never as root. Steps 1–3 and 5 need a terminal there (`ssh forge@<server>`).
-
-1. **Git and GitHub.** Set your Git name and email, then give the server access to the private repos with the GitHub CLI (`sudo apt install gh`):
-
-   ```sh
-   git config --global user.name "<your name>"
-   git config --global user.email "<email>"
-   gh auth login
-   gh auth setup-git
-   ```
-
-   `gh auth setup-git` makes plain `git clone https://github.com/...` use that login, so `fleet.json` stays as it is. With an SSH key instead, add it to GitHub and run once: `git config --global url."git@github.com:".insteadOf "https://github.com/"`.
-2. **Claude Code.** Install it and sign in on the server (the login prints a link to open on the laptop):
-
-   ```sh
-   curl -fsSL https://claude.ai/install.sh | bash
-   claude auth login
-   ```
-
-   T3 Code runs it from the server's `PATH`; check with `sh -lc 'command -v claude'`.
-3. **fleet and the repos.**
-
-   ```sh
-   mkdir -p ~/Development
-   git clone <your fleet remote> ~/Development/fleet
-   cd ~/Development/fleet
-   FLEET_ROOT=~/Development FLEET_HOST=vps FLEET_FLAT=yes FLEET_DATA=<your data repo remote> FLEET_CLONE=yes FLEET_SKILLS=yes scripts/setup.sh
-   ```
-
-   This puts every repo directly in `~/Development` (`FLEET_FLAT=yes`); leave it out to keep the folders from `fleet.json`. Repos limited to `macos` are skipped. The data repo is cloned first, to `~/Development/fleet-data`, as it holds the list; the server's usage lands there under `vps/` and reaches the laptop's dashboard on its next run. The third-party skills need Node (`npx`); without it setup warns and skips them, so install Node first (step 5) or rerun setup afterwards. All settings: [Configuration](#configuration).
-4. **T3 Code with T3 Connect.** Install the `t3` CLI, then make the server reachable:
-
-   ```sh
-   curl -fsSL https://t3.codes/install.sh | sh
-   t3 up --connect
-   ```
-
-   It prints a link and a code; open the link on the laptop, check the code and approve. `t3 up` installs T3 Code as a background service that starts at boot. If it says lingering is disabled, run `sudo loginctl enable-linger "$(id -un)"` and `t3 up` again. `t3 status` shows the state.
-5. **Optional, on the server:** `scripts/schedule-collect.sh install` in `~/Development/fleet`, so the server collects its agents' usage once a day ([Keeping the data](#keeping-the-data)). It needs Node 22.18 or newer (for example through nvm), not `pnpm install`. Also `sudo t3 browser setup` if browser tabs or HTML previews fail to start (Ubuntu 23.10+), and `t3 service protect` so the server stays reachable when agents fill the memory.
-6. **On the laptop.** In T3 Code, sign in to the same T3 Connect account and choose the server. In **Settings → Providers**, select the server and enable Claude. Add the projects by their path on the server, such as `~/Development/my-site` (flat).
-
-T3 Connect links up to 3 machines per account. Details: [T3 Code remote access](https://github.com/pingdotgg/t3code/blob/main/docs/user/remote-access.md), [background service](https://github.com/pingdotgg/t3code/blob/main/docs/user/background-service.md).
-
-### Projects on the VPS
-
-Each repo brings its own setup, not fleet:
-
-- **Long-lived setup**, such as a Craft site in Forge with its database and `.env`: describe it in the repo's read-first file.
-- **Per worktree**, such as installing dependencies or copying `.env`: a T3 Code project script set to run when a worktree is created. The repo can share its scripts in `t3.json`. When T3 removes old worktrees is set in **Settings → Worktrees → Cleanup**.
+A Linux server can host the repos and the agents, with the laptop connecting through T3 Code. The steps (Git and GitHub, Claude Code, fleet, T3 Connect) are in [docs/vps.md](docs/vps.md); cloud machines that sleep when idle: [docs/t3boat.md](docs/t3boat.md).
 
 ## Skills
 
-- **Global** skills live in `skills/<name>/SKILL.md`. Setup links them into every project on the machine. To add one: create the folder with its `SKILL.md`, rerun `scripts/setup.sh`, commit. To remove one: delete the folder and rerun setup; it removes the dead links.
-- **Local** skills, only for working in fleet, live in `.agents/skills/<name>/SKILL.md`, such as `setup`, the setup wizard. Apps started in fleet load them directly; no setup needed.
-- **Third-party** skills are listed in `skills.json`, not copied: setup installs the missing ones on each host with the `skills` CLI, which records the installed commit in `~/.agents/.skill-lock.json`. `pnpm skills:update` updates them. A third-party skill you change becomes yours: copy it into `skills/`, note where it came from in its `SKILL.md`, and take it out of `skills.json`.
+- **Global** skills live in `skills/<name>/SKILL.md`; setup links them into every project on the machine.
+- **Local** skills, only for working in fleet, live in `.agents/skills/<name>/SKILL.md`, such as `setup`, the setup wizard.
+- **Third-party** skills are listed in `skills.json`, not copied; setup installs the missing ones on each host with the `skills` CLI, `pnpm skills:update` updates them.
 
-### skills.json
-
-```json
-{
-  "cli": "skills@1.9.0",
-  "agents": ["claude-code", "codex", "amp", "pi", "zed"],
-  "sources": [{ "source": "mattpocock/skills", "skills": ["tdd", "grilling"] }]
-}
-```
-
-| Field | Meaning |
-| --- | --- |
-| `cli` | The `skills` CLI package with its pinned version; setup and `pnpm skills:update` run it through `npx`. |
-| `agents` | The agents the CLI installs for (its `--agent` names). |
-| `sources` | One entry per source the CLI accepts (`owner/repo`, a Git URL), with the skill names to install from it. |
-
-To add one: find its name with `npx skills add <source> --list`, add it to `skills.json`, rerun `scripts/setup.sh`, commit. Other hosts install it on their next setup run; `check.sh` lists it as missing until then. Taking one out of the list does not uninstall it; run `npx skills remove -g <name>` on each host.
-
-Updates are not automatic: `pnpm skills:update` moves every skill the CLI installed to the latest commit of its source, on this host. The installed commits are in `~/.agents/.skill-lock.json`, per host, not in fleet. A name in both `skills/` and `skills.json` is a mistake: setup warns and uses the one in `skills/`. To raise the CLI version, change `cli`.
+How to add, update or remove each kind, and the fields of `skills.json`: [docs/skills.md](docs/skills.md).
 
 ## License
 

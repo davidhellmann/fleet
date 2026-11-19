@@ -371,5 +371,5 @@ cat <<EOF
 
 Done. Left for you:
 - Codex: mark $FLEET_DIR as a trusted project, or it ignores .codex/config.toml.
-- Amp orbs: import the shared skills into your Amp personal skills (README.md).
+- Amp orbs: import the shared skills into your Amp personal skills (docs/skills.md).
 EOF

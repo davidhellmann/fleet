@@ -5,7 +5,7 @@ description: Set up fleet on this host as a wizard - check the tools and setting
 
 # Setup wizard
 
-Walk the user through setting up fleet on this host, one round of questions at a time. Facts come from `README.md` (sections Set up a machine, Configuration, Set up a VPS); this skill only orders them into a wizard. Reply in the user's language.
+Walk the user through setting up fleet on this host, one round of questions at a time. Facts come from `README.md` (sections Set up a machine, Configuration), `docs/vps.md` and `docs/skills.md`; this skill only orders them into a wizard. Reply in the user's language.
 
 The wizard ends at the clone. Setting up a cloned repo (dependencies, database, `.env`) follows that repo's read-first file; name it, leave it to the user.
 
@@ -61,8 +61,8 @@ List those that apply, each with what to click or type:
 - `gh` signed out: `gh auth login`, then `gh auth setup-git`.
 - Git identity missing: `git config --global user.name` and `user.email`.
 - Codex trust `!!`: open Codex in fleet and trust the project, or it ignores `.codex/config.toml`.
-- Amp orbs: import the global skills once (README, Set up a machine, step 2).
-- On a VPS: T3 Connect and the rest of README, Set up a VPS, steps 4 to 6.
+- Amp orbs: import the global skills once (`docs/skills.md`, Amp orbs and Delta).
+- On a VPS: T3 Connect and the rest of `docs/vps.md`, steps 4 to 6.
 
 ## Done when
 
