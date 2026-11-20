@@ -87,7 +87,8 @@ Lives in the data repo, at `<root>/<data repo>/fleet.json` (without a data repo:
       "remote": "https://github.com/you/my-plugin",
       "dir": "Plugins",
       "readFirst": "CLAUDE.md",
-      "worktrees": ["2.x"]
+      "worktrees": ["2.x"],
+      "stack": ["craft@5", "php@8.2", "composer"]
     }
   ]
 }
@@ -105,6 +106,7 @@ Lives in the data repo, at `<root>/<data repo>/fleet.json` (without a data repo:
 | `worktrees` | no | Branches checked out next to the repo: `["2.x"]` → `my-plugin-2.x`. |
 | `formerNames` | no | Earlier names of a renamed repo: `["old-name"]`. The dashboard counts sessions in old checkouts and worktrees of that name, or with that remote at the same owner, towards this repo. |
 | `os` | no | Systems the repo is cloned on: `["macos"]`, `["linux"]`. Missing = all. Use `macos` for repos that are only Swift/Xcode. |
+| `stack` | no | What the repo is built on and what a host must bring: tags `name` or `name@version`, framework first, e.g. `["craft@5", "php@8.4", "composer", "mysql@8.0"]`. Listed in `REPOS.md`; `pnpm stack` checks this host for the tools among them, `pnpm readiness` the tags against the repo's files. Rules and installing: [docs/environments.md](docs/environments.md#host-tools). |
 
 A repo lives at `<root>/<dir>/<name>`, or `<root>/<name>` on a flat host. After changing `fleet.json`, run `node scripts/write-repo-list.ts` (rewrites `REPOS.md`), then commit and push the data repo. The other hosts get the change with their next collector run, which pulls the data repo and rewrites their `REPOS.md`.
 
@@ -204,6 +206,7 @@ The dashboard shows how much of each plan window is used (Claude: 5 hours and th
 | `pnpm test` | runs the tests |
 | `pnpm repo-list`, `pnpm repo-list:check` | the two `write-repo-list.ts` commands above |
 | `pnpm readiness` | reports per repo on this host what a fresh environment needs (`.agents/setup`, `dev` script, Node pin, `.env.example`, preview configs); reads only, `-- --json` for scripts; see [docs/environments.md](docs/environments.md#make-a-repo-ready) |
+| `pnpm stack` | lists the host tools the repos of this host name in `stack` (PHP, Composer, Node, a database …), which repos need each, and whether this host has it in that version; reads only, `-- --json` for scripts; see [docs/environments.md](docs/environments.md#host-tools) |
 | `pnpm skills:update` | updates every global skill installed with the `skills` CLI, the ones from `skills.json` included |
 
 ## Set up a VPS

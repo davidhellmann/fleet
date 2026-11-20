@@ -6,7 +6,8 @@
       "remote": "https://github.com/you/my-site",
       "dir": "Sites",
       "readFirst": "AGENTS.md",
-      "site": "https://example.com"
+      "site": "https://example.com",
+      "stack": ["astro@7", "node@22", "pnpm"]
     },
     {
       "name": "my-plugin",
@@ -14,14 +15,16 @@
       "remote": "https://github.com/you/my-plugin",
       "dir": "Plugins",
       "readFirst": "CLAUDE.md",
-      "worktrees": ["2.x"]
+      "worktrees": ["2.x"],
+      "stack": ["craft@5", "php@8.2", "composer"]
     },
     {
       "name": "my-app",
       "description": "an iOS app in SwiftUI.",
       "remote": "https://github.com/you/my-app",
       "dir": "Apps",
-      "os": ["macos"]
+      "os": ["macos"],
+      "stack": ["swiftui", "xcode"]
     }
   ]
 }

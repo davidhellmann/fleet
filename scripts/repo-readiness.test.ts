@@ -25,6 +25,7 @@ describe('assessRepo', () => {
     expect(r.runtime.mark).toBe('n/a');
     expect(r.env.mark).toBe('--');
     expect(r.previews.mark).toBe('--');
+    expect(r.stack).toEqual({ mark: '--', note: 'none' });
   });
 
   it('finds a ready Node repo', () => {
@@ -93,8 +94,8 @@ describe('assessRepos', () => {
     mkdirSync(join(dir, 'here'));
     const table = renderTable(assessRepos([repo('here'), repo('mac', { os: ['macos'] })], (r) => join(dir, r.name), 'linux'));
     const [header, first, second] = table.split('\n');
-    expect(header).toMatch(/^repo\s+read first\s+\.agents\/setup\s+dev\s+runtime\s+env names\s+previews$/);
-    expect(first).toMatch(/^here\s+-- none\s+-- none\s+n\/a\s+n\/a\s+-- none\s+-- none$/);
+    expect(header).toMatch(/^repo\s+read first\s+\.agents\/setup\s+dev\s+runtime\s+env names\s+previews\s+stack$/);
+    expect(first).toMatch(/^here\s+-- none\s+-- none\s+n\/a\s+n\/a\s+-- none\s+-- none\s+-- none$/);
     expect(second).toBe('mac   -- only on macos');
     // The skipped row's long note does not widen the column under it.
     expect(header.indexOf('.agents/setup') - header.indexOf('read first')).toBe('read first'.length + 2);

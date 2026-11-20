@@ -73,6 +73,7 @@ A t3boat machine is closer to a personal runner that sleeps: fleet's setup runs 
 | runtime | a Node pin (`.node-version`, `.nvmrc`, `mise.toml`, `engines`) and a package manager (`packageManager` or a lockfile) | the setup installs the right one |
 | env names | `.env.example` with every variable name, no values | `!!` when a `.env` exists here but its names are nowhere in Git: a fresh environment cannot know them |
 | previews | `.amp/services.yaml`, `.claude/launch.json`, `t3.json` | optional; each helps one app |
+| stack | every tag the repo's files show is in its `stack` in `fleet.json`, in an agreeing version: `--` names the tags to add, `!!` a version that disagrees | agents and `pnpm stack` read it ([Host tools](#host-tools)) |
 
 ### `.agents/setup`
 
@@ -88,9 +89,38 @@ One script for both Amp and Delta:
 
 Delta keeps its local checkouts inside the repo folder, in `.delta/worktrees/` and `.delta/clones/`, and excludes them from Git itself (`.git/info/exclude`). Tools that search the folder on their own do not read that file: test runners, file watchers, linters and type checkers then also run over every thread's copy (Vitest counted each test three times). Exclude `**/.delta/**` in their config, in the repo, when it is used with Delta. The other files under `.delta/` (`setup`, `prepare`, `linked`, `skills/`) are meant to be committed.
 
+### Host tools
+
+`stack` in `fleet.json` names what a repo is built on and what a host must bring to run it, as tags: `name` or `name@version`.
+
+```json
+"stack": ["craft@5", "php@8.4", "composer", "mysql@8.0", "redis@7", "node@22"]
+```
+
+- The framework first, with its major (`craft@5`, `astro@7`): context for agents in `REPOS.md`, and a way to find every repo on one version.
+- Then what the host installs, with the version the host has to match: PHP to the minor (`php@8.4`), Node, MySQL and Redis to the major or minor the repo needs. Package managers without one (`pnpm`): `packageManager` in `package.json` pins it.
+- Nothing that `pnpm install` or `composer install` brings (Vite in an Astro repo, Craft plugins), and nothing about how a host provides a tool (Valet, DBngin, nginx).
+
+The host tools are the tags in `HOST_TOOLS` in `scripts/stack.ts`: `php`, `composer`, `node`, `pnpm`, `yarn`, `bun`, `mysql`, `mariadb`, `postgres`, `redis`, `xcode` (macOS only). `pnpm stack` lists each one the repos of this host name, with the repos and what the host has: `ok` with the version and where it was found, also beside the active one (`php8.2` on Debian/Ubuntu, Homebrew's `opt/php@8.2`, nvm's Node versions); `!!` missing or another version; `--` a database or Redis not on `PATH`, which is fine when it runs in DBngin, Docker or on another machine. It reads only.
+
+Installing what is `!!`:
+
+| Tool | macOS | Ubuntu server |
+| --- | --- | --- |
+| PHP | `brew install php@8.4`; Valet switches per repo (`.valetrc`) | Forge: install the version under the server's PHP settings. Without Forge: `ppa:ondrej/php`, then `php8.4-cli` and the extensions the repo needs (Craft: `bcmath curl gd intl mbstring mysql xml zip`) |
+| Composer | `brew install composer` | Forge brings it; else the installer from getcomposer.org |
+| Node | `nvm install 22` | `nvm install 22` ([vps.md](vps.md)) |
+| pnpm, Yarn | `corepack enable pnpm` with Node 22 or 24, else `npm i -g pnpm` | the same |
+| MySQL, Redis | DBngin or `brew install mysql@8.0 redis` | Forge provisions both; else `apt install mysql-server redis-server` |
+| Xcode | the App Store | no |
+
+Installing needs `sudo` on a server: hand those commands to the user. A database server is only the start: the database itself, its data and the site's `.env` follow the repo's read-first file ([vps.md](vps.md#setting-up-a-project)).
+
 ### Why no run manifest
 
 The facts a manifest would hold already have a home every tool reads: scripts and the package manager in `package.json`, the Node version in its pin file, the port in the framework config, variable names in `.env.example`, and each provider's format in its own file. A fleet manifest would be one more copy that no provider reads. So `fleet.json` stays a list of where repos live, and the report checks the repos' own files instead. Writing a provider file (`.amp/services.yaml` is five lines) is a task for the agent in that repo, not a generator.
+
+`stack` is the one exception, for what no repo file holds: the database and the tools a host installs before any lockfile helps, and a summary to find repos by. Where a repo does pin a version (`config.platform.php` in `composer.json`, `.valetrc`, `.node-version`, `.nvmrc`, the framework in its manifest), the readiness report compares it with the tag, so the copy cannot drift unnoticed.
 
 ## Previews
 

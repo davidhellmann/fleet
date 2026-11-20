@@ -93,5 +93,6 @@ cd ~/Development/fleet && git pull && FLEET_CLONE=yes FLEET_SKILLS=yes scripts/s
 
 Setup clones every repo from `fleet.json` (apart from those limited by `os` to another system) and adds its worktrees. That is all: it does not install dependencies, create `.env` files or set up a database. Each repo brings that itself:
 
+- **Once per host:** the tools the repos need, such as PHP, Composer or MySQL. `pnpm stack` lists them from each repo's `stack` and says what is missing; installing them: [environments.md](environments.md#host-tools).
 - **Once per repo, by hand:** create its `.env` (it is not in Git; copy it from the laptop or write it anew), install dependencies in the main checkout if you work there, and for a Craft site set up the site and database in Forge. The repo's read-first file says what it needs.
 - **Per worktree, automatically:** a T3 Code project script set to run when a worktree is created, such as linking the main checkout's `.env` into the worktree and installing dependencies. The repo can share its scripts in a committed `t3.json`, so it reaches the server with the clone. A repo whose worktrees run without any setup needs none. When T3 removes old worktrees is set in **Settings → Worktrees → Cleanup**.

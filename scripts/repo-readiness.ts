@@ -12,6 +12,7 @@
 import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FLEET_DIR, type Os, type Repo, fleetPaths, loadRepos, readHostConfig, repoDir } from './config.ts';
+import { compareStack, stackFromRepo } from './stack.ts';
 
 export type Mark = 'ok' | '--' | '!!' | 'n/a';
 
@@ -34,9 +35,11 @@ export interface Readiness {
   env: Cell;
   /** Provider preview and run configs found: Amp services, Claude Code launch, T3 Code scripts. */
   previews: Cell;
+  /** fleet.json's `stack` against what the repo's files show: tags to add, versions that disagree. */
+  stack: Cell;
 }
 
-export const COLUMNS: readonly (keyof Readiness)[] = ['readFirst', 'setup', 'dev', 'runtime', 'env', 'previews'];
+export const COLUMNS: readonly (keyof Readiness)[] = ['readFirst', 'setup', 'dev', 'runtime', 'env', 'previews', 'stack'];
 const HEADINGS: Record<keyof Readiness, string> = {
   readFirst: 'read first',
   setup: '.agents/setup',
@@ -44,6 +47,7 @@ const HEADINGS: Record<keyof Readiness, string> = {
   runtime: 'runtime',
   env: 'env names',
   previews: 'previews',
+  stack: 'stack',
 };
 
 const has = (dir: string, file: string) => existsSync(join(dir, file));
@@ -87,7 +91,7 @@ const PREVIEW_CONFIGS: [string, string][] = [
 ];
 
 /** What the repo checked out at `dir` brings for a fresh environment. */
-export function assessRepo(dir: string, readFirst?: string): Readiness {
+export function assessRepo(dir: string, readFirst?: string, stack?: readonly string[]): Readiness {
   const pkg = readPackage(dir);
 
   const readFirstCell: Cell = readFirst
@@ -127,7 +131,7 @@ export function assessRepo(dir: string, readFirst?: string): Readiness {
   const found = PREVIEW_CONFIGS.filter(([file]) => has(dir, file)).map(([, label]) => label);
   const previews: Cell = found.length ? { mark: 'ok', note: found.join(', ') } : { mark: '--', note: 'none' };
 
-  return { readFirst: readFirstCell, setup, dev, runtime, env, previews };
+  return { readFirst: readFirstCell, setup, dev, runtime, env, previews, stack: compareStack(stack, stackFromRepo(dir)) };
 }
 
 export interface Row {
@@ -142,7 +146,7 @@ export function assessRepos(repos: readonly Repo[], dirOf: (repo: Repo) => strin
     if (repo.os && !(repo.os as string[]).includes(os)) return { name: repo.name, readiness: null, skipped: `only on ${repo.os.join(', ')}` };
     const dir = dirOf(repo);
     if (!existsSync(dir)) return { name: repo.name, readiness: null, skipped: 'not cloned; FLEET_CLONE=yes scripts/setup.sh' };
-    return { name: repo.name, readiness: assessRepo(dir, repo.readFirst) };
+    return { name: repo.name, readiness: assessRepo(dir, repo.readFirst, repo.stack) };
   });
 }
 

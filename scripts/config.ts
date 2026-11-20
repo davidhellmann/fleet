@@ -45,6 +45,12 @@ export interface Repo {
    * with a part that runs elsewhere stays on all, with a note.
    */
   os?: Os[];
+  /**
+   * What the repo is built on and what a host must bring to run it: `name` or `name@version`, e.g.
+   * `["craft@5", "php@8.4", "composer", "mysql@8.0"]`. Tags of HOST_TOOLS (scripts/stack.ts) are
+   * installed on the host; the rest is context. Versions only where they matter to a host or a filter.
+   */
+  stack?: string[];
 }
 
 /** The settings of this host (fleet.local.json). */
@@ -69,7 +75,9 @@ export interface HostConfig {
 /** fleet's own folder, from this file's location (scripts/ is one below). */
 export const FLEET_DIR = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
 
-const FIELDS = new Set(['name', 'description', 'remote', 'dir', 'readFirst', 'note', 'site', 'worktrees', 'formerNames', 'os']);
+const FIELDS = new Set(['name', 'description', 'remote', 'dir', 'readFirst', 'note', 'site', 'worktrees', 'formerNames', 'os', 'stack']);
+/** A `stack` tag: lowercase name, optionally `@` and a version of numbers (`php@8.4`, `craft@5`). */
+export const STACK_TAG = /^[a-z][a-z0-9-]*(@\d+(\.\d+)*)?$/;
 const REQUIRED = ['name', 'description', 'remote'] as const;
 const OPTIONAL_TEXT = ['readFirst', 'note', 'site'] as const;
 export const HOST_NAME = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
@@ -111,6 +119,9 @@ export function parseRepos(data: unknown): Repo[] {
     }
     if ('os' in entry && !(isTextList(entry.os) && entry.os.every((o) => (OSES as readonly string[]).includes(o)))) {
       problems.push(`${at}: "os" must be a non-empty list of ${OSES.join(', ')}`);
+    }
+    if ('stack' in entry && !(isTextList(entry.stack) && entry.stack.every((t) => STACK_TAG.test(t)))) {
+      problems.push(`${at}: "stack" must be a non-empty list of tags such as "php@8.4" or "pnpm"`);
     }
     if (isText(entry.site) && !/^https?:\/\//.test(entry.site)) problems.push(`${at}: "site" must be an http(s) URL`);
 
@@ -196,6 +207,7 @@ export function renderRepoList(repos: readonly Repo[]): string {
   const lines = repos.map((r) => {
     const facts = [
       r.dir && `dir \`${r.dir}\``,
+      r.stack && `stack: ${r.stack.join(', ')}`,
       r.readFirst && `read first: \`${r.readFirst}\``,
       r.worktrees && `worktrees: ${r.worktrees.map((b) => `\`${b}\``).join(', ')}`,
       r.os && `only on ${r.os.map((o) => OS_LABEL[o]).join(', ')}`,
