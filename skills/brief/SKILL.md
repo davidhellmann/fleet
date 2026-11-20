@@ -35,7 +35,7 @@ If three questions are not enough, the task is too unclear for a brief. Say so, 
 
 ## 4. Show the brief
 
-Keep it to about a dozen lines, in this shape:
+Size it to the task. A small task gets three or four lines: Goal and Done when, plus a slot only when it holds something. A larger task gets about a dozen lines, in this shape:
 
 ```
 Goal: <one or two sentences, with the why>
@@ -47,10 +47,11 @@ Done when:
 - <check you can run>
 ```
 
-Then decide whether to start:
+Then decide whether to start. The test is whether the work is **cheap to redo**: confined to a few files, nothing pushed, published, sent, deleted or migrated, so a wrong guess costs one more short round.
 
 - Nothing is marked as assumed and you asked no questions: show the brief and start right away.
-- Anything is marked as assumed, or you asked questions: show the brief and wait for the user's OK.
+- You asked questions or assumed something, and the work is cheap to redo: start right away with your recommended answers. Brief, questions and result go in one reply; after the result, one line per question says what a different answer would change.
+- You asked questions or assumed something, and the work is not cheap to redo: show the brief and wait for the user's OK.
 - The user says "go" without answering a question: continue with your recommended answer.
 
 ## 5. Do the work, then check it
